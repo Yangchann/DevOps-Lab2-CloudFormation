@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create Security Groups for Public and Private EC2'
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Environment name
+  VpcId:
+    Type: String
+    Description: VPC ID
+  MyIp:
+    Type: String
+    Description: Your IP address to SSH into Public EC2 (e.g., 1.2.3.4/32)
+
+Resources:
+  PublicEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Public EC2 - only allow SSH from your IP
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref MyIp
+      Tags:
+        - Key: Name
+          Value: !Sub ${Environment}-public-ec2-sg
+
+  PrivateEC2SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for Private EC2 - only allow SSH from Public EC2
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref PublicEC2SG
+      Tags:
+        - Key: Name
+          Value: !Sub ${Environment}-private-ec2-sg
+
+Outputs:
+  PublicEC2SGId:
+    Description: Security Group ID for Public EC2
+    Value: !Ref PublicEC2SG
+  PrivateEC2SGId:
+    Description: Security Group ID for Private EC2
+    Value: !Ref PrivateEC2SG

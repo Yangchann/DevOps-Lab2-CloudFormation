@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Create NAT Gateway & Private Route Table'
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Environment name
+  VpcId:
+    Type: String
+    Description: VPC ID
+  PublicSubnet1Id:
+    Type: String
+    Description: Public Subnet 1 ID
+  PrivateSubnet1Id:
+    Type: String
+    Description: Private Subnet 1 ID
+  PrivateSubnet2Id:
+    Type: String
+    Description: Private Subnet 2 ID
+
+Resources:
+  NatEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${Environment}-nat-eip
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP.AllocationId
+      SubnetId: !Ref PublicSubnet1Id
+      Tags:
+        - Key: Name
+          Value: !Sub ${Environment}-natgw
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub ${Environment}-private-rt
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: PrivateRoute
+    Properties:
+      SubnetId: !Ref PrivateSubnet1Id
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn: PrivateRoute
+    Properties:
+      SubnetId: !Ref PrivateSubnet2Id
+      RouteTableId: !Ref PrivateRouteTable
+
+Outputs:
+  NatGatewayId:
+    Description: NAT Gateway ID
+    Value: !Ref NatGateway
+  PrivateRouteTableId:
+    Description: Private Route Table ID
+    Value: !Ref PrivateRouteTable
