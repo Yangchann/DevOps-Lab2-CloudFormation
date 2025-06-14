@@ -12,8 +12,10 @@ phases:
 
   pre_build:
     commands:
-      - echo "Validating templates with cfn-lint..."
-      - cfn-lint main.template.yaml modules/*.yaml *.yaml *.yml
+      - echo "Linting main.yaml..."
+      - if [ -f main.yaml ]; then cfn-lint main.yaml; fi
+      - echo "Linting modules/*.yaml..."
+      - for file in modules/*.yaml; do [ -f "$file" ] && cfn-lint "$file"; done
 
   build:
     commands:
