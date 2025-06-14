@@ -235,7 +235,6 @@ Resources:
                 Repo: !Ref GithubRepo
                 Branch: !Ref GithubBranch
                 OAuthToken: "{{resolve:secretsmanager:TOKEN_GITHUB:SecretString:token}}"
-                PollForSourceChanges: false
               OutputArtifacts:
                 - Name: SourceOutput
               RunOrder: 1
