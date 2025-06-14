@@ -1,6 +1,7 @@
 project:
   name: taskcat
-  regions: ${REGION}
+  regions:
+    - ${REGION}
   s3_bucket: ${S3_BUCKET}
 
 tests:
