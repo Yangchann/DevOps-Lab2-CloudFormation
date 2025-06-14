@@ -5,27 +5,13 @@ Parameters:
   GithubOwner:
     Type: String
     Description: Github username
-  GithubRepo:
-    Type: String
-    Description: Github repository name
-  GithubBranch:
-    Type: String
-    Default: main
-    Description: Branch to deploy from
-  GithubToken:
-    Type: String
-    NoEcho: true
-    Description: Github personal access token
-  DeploymentBucket:
-    Type: String
-    Description: S3 bucket for storing deployment artifacts
 
 Resources:
   # S3 bucket for Pipeline Artifacts
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${AWS::StackName}-artifacts-${AWS::AccountId}
+      BucketName: nt548-lab2-361
       VersioningConfiguration:
         Status: Enabled
 
@@ -69,7 +55,7 @@ Resources:
         Image: aws/codebuild/standard:5.0
         EnvironmentVariables:
           - Name: BUCKET_NAME
-            Value: !Ref DeploymentBucket
+            Value: !Ref ArtifactsBucket
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yaml
@@ -132,12 +118,12 @@ Resources:
                 Category: Source
                 Owner: AWS
                 Provider: GitHub
-                Version: '1'
+                Version: '2'
               Configuration:
                 Owner: !Ref GithubOwner
-                Repo: !Ref GithubRepo
-                Branch: !Ref GithubBranch
-                OAuthtoken: !Ref GithubToken
+                Repo: DevOps-Lab2-CloudFormation
+                Branch: main
+                OAuthtoken: ${GITHUB_TOKEN}
               OutputArtifacts:
                 - Name: SourceOutput
 

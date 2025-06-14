@@ -13,6 +13,5 @@ tests:
       KeyName: nt548-lab2
       AMI: ami-0004e1ae92a8fdaed
       BucketName: nt548-lab2-361
-      Region: ap-southeast-1
     regions:
       - ap-southeast-1

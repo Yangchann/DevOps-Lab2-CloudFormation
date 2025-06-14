@@ -21,10 +21,6 @@ Parameters:
   BucketName:
     Type: String
     Description: S3 bucket name where the module templates are stored
-  Region:
-    Type: String
-    Default: ap-southeast-1
-    Description: AWS region where the resources will be created
 
 Resources:
   VPCStack:
@@ -58,7 +54,7 @@ Resources:
   SecurityGroupsStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub "https://${BucketName}.s3.amazonaws.com/modules/4-security-groups.yaml"
+      TemplateURL: !Sub https://${BucketName}.s3.amazonaws.com/modules/4-security-groups.yaml
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
