@@ -1,14 +1,6 @@
 # This file is used to define the build process for the project.
 version: 0.2
 
-env:
-  secrets-manager:
-    S3_BUCKET_NAME: S3_BUCKET
-    REGION: REGION
-    KEY_NAME: KEY_NAME
-    ENVIRONMENT: ENVIRONMENT
-    AMI_ID: AMI_ID
-
 phases:
   install:
     runtime-versions:
