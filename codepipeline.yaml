@@ -11,7 +11,7 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: nt548-lab2-361
+      BucketName: nt548-lab2-0361
       VersioningConfiguration:
         Status: Enabled
 
@@ -29,7 +29,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
       Policies:
-        - PolicyName: CodeBuildPolicy
+        - PolicyName: CodeBuildAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -45,7 +45,7 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${AWS::StackName}-build
+      Name: nt548-lab2-codebuild
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: CODEPIPELINE
@@ -65,6 +65,7 @@ Resources:
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: codepipeline-lab2-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -83,6 +84,7 @@ Resources:
                   - cloudformation:*
                   - codebuild:*
                   - iam:PassRole
+                  - secretsmanager:GetSecretValue
                 Resource: '*'
 
   # IAM Role for CloudFormation
@@ -104,7 +106,7 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Sub ${AWS::StackName}-pipeline
+      Name: CodePipeline-NT548-Lab2
       RoleArn: !GetAtt CodePipelineRole.Arn
       ArtifactStore:
         Type: S3
@@ -113,24 +115,25 @@ Resources:
         # State 1: Get code from Github
         - Name: Source
           Actions:
-            - Name: SourceAction
+            - Name: GitHub_Source
               ActionTypeId:
                 Category: Source
-                Owner: AWS
+                Owner: ThirdParty
                 Provider: GitHub
-                Version: '2'
+                Version: '1'
               Configuration:
                 Owner: !Ref GithubOwner
                 Repo: DevOps-Lab2-CloudFormation
                 Branch: main
-                OAuthtoken: ${GITHUB_TOKEN}
+                OAuthToken: "{{resolve:secretsmanager:GITHUB_TOKEN:SecretString}}"
               OutputArtifacts:
                 - Name: SourceOutput
+              RunOrder: 1
 
         # State 2: Build and test with CodeBuild
         - Name: Build
           Actions:
-            - Name: BuildAction
+            - Name: CodeBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
@@ -142,6 +145,7 @@ Resources:
                 - Name: SourceOutput
               OutputArtifacts:
                 - Name: BuildOutput
+              RunOrder: 1
 
         # State 3: Deploy with CloudFormation
         - Name: Deploy
@@ -154,20 +158,19 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: aws-infrastructure-stack
-                TemplatePath: BuildOutput::package-template.yaml
+                StackName: nt548-lab2-stack
+                TemplatePath: BuildOutput::main.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
-                ParameterOverrides: '{"Environment":"prod","MyIp":"0.0.0.0/0","BucketName":"prod-deployment-bucket"}'
               InputArtifacts:
                 - Name: BuildOutput
-
+              RunOrder: 1
 
 Outputs:
   PipelineURL:
-    Description: URL of the CodePipeline
+    Description: View the pipeline in AWS Console
     Value: !Sub https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${AWS::StackName}/view?region=${AWS::Region}
 
   ArtifactsBucket:
-    Description: S3 bucket for pipeline artifacts
+    Description: Pipeline artifact S3 bucket
     Value: !Ref ArtifactsBucket
