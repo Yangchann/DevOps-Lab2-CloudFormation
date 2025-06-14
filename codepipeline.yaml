@@ -85,7 +85,11 @@ Resources:
                   - codebuild:*
                   - iam:PassRole
                   - secretsmanager:GetSecretValue
-                Resource: '*'
+                  - codestar-connections:UseConnection
+                  - codestar-connections:GetConnection
+                Resource:
+                  - '*'
+                  - arn:aws:secretsmanager:ap-southeast-1:182399687018:secret:GITHUB_TOKEN-zld5KR
 
   # IAM Role for CloudFormation
   CloudFormationRole:
