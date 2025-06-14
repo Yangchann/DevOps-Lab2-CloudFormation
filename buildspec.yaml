@@ -1,0 +1,42 @@
+# This file is used to define the build process for the project.
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12.3
+    commands:
+      - echo "Installing dependencies..."
+      - pip install --upgrade pip
+      - pip install cfn-lint taskcat awscli
+
+  pre_build:
+    commands:
+      - echo "Validating templates with cfn-lint..."
+      - cfn-lint main.template.yaml modules/*.yaml *.yaml *.yml
+
+  build:
+    commands:
+      - echo "Run test with taskcat..."
+      - taskcat test run -d
+
+  post_build:
+    commands:
+      - echo "Packaging artifacts..."
+      - aws cloudformation package \
+        --template-file main.template.yaml \
+        --s3-bucket $BUCKET_NAME \
+        --output-template-file packaged-template.yaml
+      - echo "Uploading artifacts to S3..."
+      - aws s3 cp packaged-template.yaml s3://$BUCKET_NAME/packaged-template.yaml
+      - echo "Build completed"
+      - aws cloudformation deploy \
+        --template-file s3://$BUCKET_NAME/packaged-template.yaml \
+        --stack-name $STACK_NAME \
+        --capabilities CAPABILITY_NAMED_IAM
+
+artifacts:
+  files:
+    - packaged-template.yaml
+    - modules/*.yaml
+  name: cloudformation-artifacts

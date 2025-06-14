@@ -1,0 +1,47 @@
+# # Tạo key pairs với tên giống nhau ở cả 2 regions
+# aws ec2 create-key-pair --key-name test-key --region ap-southeast-1
+# aws ec2 create-key-pair --key-name test-key --region ap-northeast-1
+
+# # Tạo S3 bucket cho TaskCat (nếu chưa có)
+# aws s3 mb s3://taskcat-test --region ap-southeast-1
+
+# # Lấy AMI ID mới nhất
+# aws ec2 describe-images --region ap-southeast-1 --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" --query 'Images[0].ImageId' --output text
+# aws ec2 describe-images --region ap-northeast-1 --filters "Name=name,Values=amzn2-ami-hvm-*-x86_64-gp2" --query 'Images[0].ImageId' --output text
+
+project:
+  name: aws-infrastructure-deployment
+  package_lambda: false
+  regions:
+    - ap-southeast-1 # Singapore
+    - ap-northeast-1 # Tokyo
+
+tests:
+  development:
+    template: packaged-template.yaml
+    parameters:
+      Environment: dev
+      MyIp: 171.252.189.136/32
+      KeyName: test-key
+      LastAmiId: ami-05c261f9eb9de6a80
+    regions:
+      - ap-southeast-1
+
+  production:
+    template: packaged-template.yaml
+    parameters:
+      Environment: prod
+      MyIp: 171.252.189.136/32
+      KeyName: test-key
+      LastAmiId: ami-07bff4033fbfe2317
+    regions:
+      - ap-northeast-1
+
+# General Configurations for Taskcat
+general:
+  s3_bucket: taskcat-test
+  s3_regional_buckets: true
+  tags:
+    Project: aws-infrastructure-deployment
+    ManagedBy: taskcat
+    Purpose: test-infrastructure-deployment

@@ -14,28 +14,23 @@ Parameters:
     Description: Your IP address to SSH into Public EC2 (e.g., 1.2.3.4/32)
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
-    Description: EC2 KeyPair name for SSH
-  BucketName:
-    Type: String
-    Description: S3 bucket name
-  Region:
-    Type: String
-    Description: AWS region
+    Description: EC2 KeyPair name for SSH access
+  LastAmiId:
+    Type: AWS::EC2::Image::Id
+    Description: Lastest Amazon Linux 2 AMI ID
 
 Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://${BucketName}.s3.${Region}.amazonaws.com/modules/1-vpc-subnet.yaml
+      TemplateURL: ./modules/1-vpc-subnet.yaml
       Parameters:
         Environment: !Ref Environment
 
   IGWPublicRouteStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - VPCStack
     Properties:
-      TemplateURL: !Sub https://${BucketName}.s3.${Region}.amazonaws.com/modules/2-igw-public-route.yaml
+      TemplateURL: ./modules/2-igw-public-route.yaml
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -44,10 +39,8 @@ Resources:
 
   NATGWPrivateRouteStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - VPCStack
     Properties:
-      TemplateURL: !Sub https://${BucketName}.s3.${Region}.amazonaws.com/modules/3-natgw-private-route.yaml
+      TemplateURL: ./modules/3-natgw-private-route.yaml
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -57,10 +50,8 @@ Resources:
 
   SecurityGroupsStack:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - VPCStack
     Properties:
-      TemplateURL: !Sub https://${BucketName}.s3.${Region}.amazonaws.com/modules/4-security-groups.yaml
+      TemplateURL: ./modules/4-security-groups.yaml
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -68,11 +59,8 @@ Resources:
 
   EC2Stack:
     Type: AWS::CloudFormation::Stack
-    DependsOn:
-      - VPCStack
-      - SecurityGroupsStack
     Properties:
-      TemplateURL: !Sub https://${BucketName}.s3.${Region}.amazonaws.com/modules/5-ec2.yaml
+      TemplateURL: ./modules/5-ec2.yaml
       Parameters:
         Environment: !Ref Environment
         PublicSubnet1Id: !GetAtt VPCStack.Outputs.PublicSubnet1Id
@@ -80,6 +68,7 @@ Resources:
         PublicEC2SGId: !GetAtt SecurityGroupsStack.Outputs.PublicEC2SGId
         PrivateEC2SGId: !GetAtt SecurityGroupsStack.Outputs.PrivateEC2SGId
         KeyName: !Ref KeyName
+        LastAmiId: !Ref LastAmiId
 
 Outputs:
   VPCId:

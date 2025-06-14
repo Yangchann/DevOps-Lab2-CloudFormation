@@ -32,9 +32,8 @@ Parameters:
       - t3.small
       - t3.medium
   LastAmiId:
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Type: AWS::EC2::Image::Id
     Description: Lastest Amazon Linux 2 AMI ID
-    Default: 'aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 
 
 Resources:
