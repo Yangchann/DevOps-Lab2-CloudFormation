@@ -72,7 +72,7 @@ Resources:
                 - s3:PutObject
                 - s3:DeleteObject
               Resource:
-                - !Sub "${ArtifactsBucket}/*"
+                - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
             - Effect: Allow
               Action:
                 - s3:ListBucket
@@ -146,7 +146,7 @@ Resources:
                   - s3:ListBucket
                 Resource:
                   - !GetAtt ArtifactsBucket.Arn
-                  - !Sub "${ArtifactsBucket}/*"
+                  - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
