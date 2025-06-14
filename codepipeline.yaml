@@ -6,19 +6,44 @@ Parameters:
     Type: String
     Description: Github username
 
+  GithubRepo:
+    Type: String
+    Description: Github repository name
+    Default: DevOps-Lab2-CloudFormation
+
+  GithubBranch:
+    Type: String
+    Description: Github branch name
+    Default: main
+
 Resources:
   # S3 bucket for Pipeline Artifacts
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: nt548-lab2-0361
+      BucketName: !Sub "${AWS::StackName}-artifacts-${AWS::AccountId}"
       VersioningConfiguration:
         Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldArtifacts
+            Status: Enabled
+            ExpirationInDays: 30
 
   # IAM role for CodeBuild
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${AWS::StackName}-codebuild-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -32,30 +57,52 @@ Resources:
         - PolicyName: CodeBuildAccess
           PolicyDocument:
             Version: '2012-10-17'
+            # Statement:
+            #   - Effect: Allow
+            #     Action:
+            #       - s3:*
+            #       - cloudformation:*
+            #       - ec2:*
+            #       - iam:*
+            #     Resource: '*'
             Statement:
-              - Effect: Allow
-                Action:
-                  - s3:*
-                  - cloudformation:*
-                  - ec2:*
-                  - iam:*
-                Resource: '*'
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:DeleteObject
+              Resource:
+                - !Sub "${ArtifactsBucket}/*"
+            - Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource: !GetAtt ArtifactsBucket.Arn
+            - Effect: Allow
+              Action:
+                - cloudformation:ValidateTemplate
+                - cloudformation:DescribeStacks
+                - cloudformation:DescribeStackEvents
+              Resource: '*'
 
   # CodeBuild project
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: nt548-lab2-codebuild
+      Name: !Sub "${AWS::StackName}-codebuild"
       ServiceRole: !GetAtt CodeBuildRole.Arn
       Artifacts:
         Type: CODEPIPELINE
       Environment:
         Type: LINUX_CONTAINER
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/standard:5.0
+        Image: aws/codebuild/standard:7.0
         EnvironmentVariables:
           - Name: BUCKET_NAME
             Value: !Ref ArtifactsBucket
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yaml
@@ -65,7 +112,7 @@ Resources:
   CodePipelineRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: codepipeline-lab2-role
+      RoleName: !Sub "${AWS::StackName}-codepipeline-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -77,24 +124,59 @@ Resources:
         - PolicyName: CodePipelinePolicy
           PolicyDocument:
             Version: '2012-10-17'
+            # Statement:
+            #   - Effect: Allow
+            #     Action:
+            #       - s3:*
+            #       - cloudformation:*
+            #       - codebuild:*
+            #       - iam:PassRole
+            #       - secretsmanager:GetSecretValue
+            #       - codestar-connections:UseConnection
+            #       - codestar-connections:GetConnection
+            #     Resource:
+            #       - '*'
+            #       - arn:aws:secretsmanager:ap-southeast-1:182399687018:secret:TOKEN_GITHUB-zld5KR
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:*
-                  - cloudformation:*
-                  - codebuild:*
-                  - iam:PassRole
-                  - secretsmanager:GetSecretValue
-                  - codestar-connections:UseConnection
-                  - codestar-connections:GetConnection
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:ListBucket
                 Resource:
-                  - '*'
-                  - arn:aws:secretsmanager:ap-southeast-1:182399687018:secret:GITHUB_TOKEN-zld5KR
+                  - !GetAtt ArtifactsBucket.Arn
+                  - !Sub "${ArtifactsBucket}/*"
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: !GetAtt CodeBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:UpdateStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:ExecuteChangeSet
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/nt548-lab2-stack/*"
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: !GetAtt CloudFormationRole.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:TOKEN_GITHUB-*"
 
   # IAM Role for CloudFormation
   CloudFormationRole:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Sub "${AWS::StackName}-cloudformation-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -104,17 +186,36 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
-
+      Policies:
+        - PolicyName: CloudFormationIAMPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:UpdateAssumeRolePolicy
+                Resource: '*'
 
   # CodePipeline
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: CodePipeline-NT548-Lab2
+      Name: !Sub "${AWS::StackName}-pipeline"
       RoleArn: !GetAtt CodePipelineRole.Arn
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactsBucket
+        EncryptionKey:
+          Type: KMS
+          Id: alias/aws/s3
       Stages:
         # State 1: Get code from Github
         - Name: Source
@@ -127,9 +228,10 @@ Resources:
                 Version: '1'
               Configuration:
                 Owner: !Ref GithubOwner
-                Repo: DevOps-Lab2-CloudFormation
-                Branch: main
-                OAuthToken: "{{resolve:secretsmanager:GITHUB_TOKEN:SecretString}}"
+                Repo: !Ref GithubRepo
+                Branch: !Ref GithubBranch
+                OAuthToken: "{{resolve:secretsmanager:TOKEN_GITHUB:SecretString:token}}"
+                PollForSourceChanges: false
               OutputArtifacts:
                 - Name: SourceOutput
               RunOrder: 1
@@ -154,27 +256,43 @@ Resources:
         # State 3: Deploy with CloudFormation
         - Name: Deploy
           Actions:
-            - Name: DeployAction
+            - Name: CreateChangeSet
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
                 Provider: CloudFormation
                 Version: '1'
               Configuration:
-                ActionMode: CREATE_UPDATE
+                ActionMode: CHANGE_SET_REPLACE
                 StackName: nt548-lab2-stack
+                ChangeSetName: pipeline-changeset
                 TemplatePath: BuildOutput::main.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
               InputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
+            - Name: ExecuteChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: '1'
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                StackName: nt548-lab2-stack
+                ChangeSetName: pipeline-changeset
+              RunOrder: 2
 
 Outputs:
   PipelineURL:
     Description: View the pipeline in AWS Console
-    Value: !Sub https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${AWS::StackName}/view?region=${AWS::Region}
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codepipeline/pipelines/${Pipeline}/view?region=${AWS::Region}"
 
   ArtifactsBucket:
     Description: Pipeline artifact S3 bucket
     Value: !Ref ArtifactsBucket
+
+  CodeBuildProject:
+    Description: CodeBuild project name
+    Value: !Ref CodeBuildProject
