@@ -31,7 +31,7 @@ Parameters:
       - t3.micro
       - t3.small
       - t3.medium
-  LastAmiId:
+  AMI:
     Type: AWS::EC2::Image::Id
     Description: Lastest Amazon Linux 2 AMI ID
 
@@ -41,7 +41,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: !Ref LastAmiId
+      ImageId: !Ref AMI
       SubnetId: !Ref PublicSubnet1Id
       SecurityGroupIds:
         - !Ref PublicEC2SGId
@@ -54,7 +54,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: !Ref LastAmiId
+      ImageId: !Ref AMI
       SubnetId: !Ref PrivateSubnet1Id
       SecurityGroupIds:
         - !Ref PrivateEC2SGId

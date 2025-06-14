@@ -8,7 +8,7 @@ Parameters:
   VpcId:
     Type: String
     Description: VPC ID
-  MyIp:
+  AllowedSSHIp:
     Type: String
     Description: Your IP address to SSH into Public EC2 (e.g., 1.2.3.4/32)
 
@@ -22,7 +22,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !Ref MyIp
+          CidrIp: !Ref AllowedSSHIp
       Tags:
         - Key: Name
           Value: !Sub ${Environment}-public-ec2-sg

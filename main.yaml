@@ -30,14 +30,14 @@ Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${Region}.amazonaws.com/${BucketName}/modules/1-vpc-subnet.yaml
+      TemplateURL: !Sub "https://${BucketName}.s3.amazonaws.com/modules/1-vpc-subnet.yaml"
       Parameters:
         Environment: !Ref Environment
 
   IGWPublicRouteStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${Region}.amazonaws.com/${BucketName}/modules/2-igw-public-route.yaml
+      TemplateURL: !Sub "https://${BucketName}.s3.amazonaws.com/modules/2-igw-public-route.yaml"
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -47,7 +47,7 @@ Resources:
   NATGWPrivateRouteStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${Region}.amazonaws.com/${BucketName}/modules/3-natgw-private-route.yaml
+      TemplateURL: !Sub https://${BucketName}.s3.amazonaws.com/modules/3-natgw-private-route.yaml
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -58,7 +58,7 @@ Resources:
   SecurityGroupsStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${Region}.amazonaws.com/${BucketName}/modules/4-security-groups.yaml
+      TemplateURL: !Sub "https://${BucketName}.s3.amazonaws.com/modules/4-security-groups.yaml"
       Parameters:
         Environment: !Ref Environment
         VpcId: !GetAtt VPCStack.Outputs.VpcId
@@ -67,7 +67,7 @@ Resources:
   EC2Stack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.${Region}.amazonaws.com/${BucketName}/modules/5-ec2.yaml
+      TemplateURL: !Sub https://${BucketName}.s3.amazonaws.com/modules/5-ec2.yaml
       Parameters:
         Environment: !Ref Environment
         PublicSubnet1Id: !GetAtt VPCStack.Outputs.PublicSubnet1Id
