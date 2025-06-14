@@ -1,18 +1,18 @@
 project:
   name: taskcat
   regions:
-    - ${REGION}
-  s3_bucket: ${S3_BUCKET}
+    - ap-southeast-1
+  s3_bucket: nt548-lab2-361
 
 tests:
   test-lab2:
     template: main.yaml
     parameters:
-      Environment: ${ENVIRONMENT}
-      AllowedSSHIp: ${ALLOWED_SSH_IP}
-      KeyName: ${KEY_NAME}
-      AMI: ${AMI_ID}
-      BucketName: ${S3_BUCKET}
-      Region: ${REGION}
+      Environment: dev
+      AllowedSSHIp: nt548-lab2-361
+      KeyName: nt548-lab2
+      AMI: ami-0004e1ae92a8fdaed
+      BucketName: nt548-lab2-361
+      Region: ap-southeast-1
     regions:
-      - ${REGION}
+      - ap-southeast-1
