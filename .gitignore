@@ -1,6 +1,15 @@
 # Ignore env file
 .env
+.config.env
 
 # Ignore aws credentials
 .pem
 
+.taskcat
+taskcat_outputs
+
+clean_buckets.sh
+clean.sh
+
+scripts/
+*.sh
