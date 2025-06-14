@@ -1,8 +1,9 @@
 project:
   name: taskcat
+  s3_bucket: nt548-lab2-361
   regions:
     - ap-southeast-1
-  s3_bucket: nt548-lab2-361
+  package_lambda: false
 
 tests:
   test-lab2:
@@ -11,7 +12,7 @@ tests:
       Environment: dev
       AllowedSSHIp: 104.28.205.71/32
       KeyName: nt548-lab2
-      AMI: ami-0004e1ae92a8fdaed
+      AMI: ami-002fa10fbb7594252
       BucketName: nt548-lab2-361
     regions:
       - ap-southeast-1
