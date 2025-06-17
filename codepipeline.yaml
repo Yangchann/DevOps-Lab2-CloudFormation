@@ -89,7 +89,37 @@ Resources:
                   - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
               - Effect: Allow
                 Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+                Resource:
+                  - "arn:aws:s3:::nt548-lab2-361"
+                  - "arn:aws:s3:::nt548-lab2-361/*"
+              - Effect: Allow
+                Action:
                   - cloudformation:ValidateTemplate
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResources
+                  - cloudformation:GetTemplate
+                  - cloudformation:ListStacks
+                  - cloudformation:UpdateStack
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ec2:Describe*
+                  - iam:GetRole
+                  - iam:PassRole
+                  - iam:CreateRole
+                  - iam:DeleteRole
+                  - iam:AttachRolePolicy
+                  - iam:DetachRolePolicy
+                  - iam:PutRolePolicy
+                  - iam:DeleteRolePolicy
                 Resource: "*"
 
   # CodeBuild project
