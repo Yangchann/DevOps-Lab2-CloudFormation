@@ -1,11 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: CI/CD Pipeline for AWS Infrastructure deployment
 
-Parameters:
-  GithubOwner:
-    Type: String
-    Description: Github username
-
 Resources:
   # S3 bucket for Pipeline Artifacts
   ArtifactsBucket:
@@ -274,9 +269,11 @@ Resources:
                 RoleArn: !GetAtt CloudFormationRole.Arn
                 ParameterOverrides: |
                   {
-                    "GithubOwner": "Yangchann",
-                    "GithubRepo": "DevOps-Lab2-CloudFormation",
-                    "GithubBranch": "main"
+                    "Environment": "dev",
+                    "AllowedSSHIp": "1.54.205.235/32",
+                    "KeyName": "nt548-lab2",
+                    "AMI": "ami-004a7732acfcc1e2d",
+                    "BucketName": "nt548-lab2-task2-deploy"
                   }
               InputArtifacts:
                 - Name: BuildOutput
