@@ -186,19 +186,16 @@ Resources:
               Configuration:
                 ActionMode: CREATE_UPDATE
                 StackName: infrastructure-stack
-                TemplatePath: BuildOutput::main.yaml
+                TemplatePath: SourceOutput::main.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
-                ParameterOverrides: !Sub
-                  -  |
+                ParameterOverrides: !Sub |
                       {
                         "Environment": "dev",
                         "AllowedSSHIp": "1.54.205.235/32",
                         "KeyName": "nt548-lab2",
-                        "AMI": "ami-004a7732acfcc1e2d",
-                        "BucketName": "${BucketName}"
+                        "AMI": "ami-004a7732acfcc1e2d"
                       }
-                  - BucketName: !Ref ArtifactsBucket
               InputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
