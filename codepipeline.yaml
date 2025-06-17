@@ -6,7 +6,7 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${AWS::StackName}-artifacts-${AWS::AccountId}"
+      BucketName: !Sub "${AWS::StackName}-artifacts"
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -267,13 +267,13 @@ Resources:
                 TemplatePath: BuildOutput::main.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
-                ParameterOverrides: |
+                ParameterOverrides: !Sub |
                   {
                     "Environment": "dev",
                     "AllowedSSHIp": "1.54.205.235/32",
                     "KeyName": "nt548-lab2",
                     "AMI": "ami-004a7732acfcc1e2d",
-                    "BucketName": "nt548-lab2-task2-deploy"
+                    "BucketName": "${ArtifactsBucket}"
                   }
               InputArtifacts:
                 - Name: BuildOutput
