@@ -33,54 +33,27 @@ Resources:
         Statement:
           - Effect: "Allow"
             Principal:
-              AWS: !GetAtt CodePipelineRole.Arn
+              AWS:
+                - !GetAtt CodePipelineRole.Arn
+                - !GetAtt CloudFormationRole.Arn
+                - !GetAtt CodeBuildRole.Arn
             Action:
               - s3:ListBucket
             Resource:
               - !Sub arn:aws:s3:::${ArtifactsBucket}
           - Effect: "Allow"
             Principal:
-              AWS: !GetAtt CloudFormationRole.Arn
+              AWS:
+                - !GetAtt CodePipelineRole.Arn
+                - !GetAtt CloudFormationRole.Arn
+                - !GetAtt CodeBuildRole.Arn
             Action:
               - s3:GetObject
               - s3:PutObject
               - s3:DeleteObject
               - s3:GetObjectVersion
-              - s3:ListBucket
             Resource:
               - !Sub arn:aws:s3:::${ArtifactsBucket}/*
-
-  CloudFormationRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${AWS::StackName}-cloudformation-role"
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: ""
-            Effect: Allow
-            Principal:
-              Service: cloudformation.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: "CloudFormationFullAccess"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - codepipeline:*
-                  - s3:*
-                  - codebuild:*
-                  - cloudformation:*
-                  - iam:*
-                  - secretsmanager:GetSecretValue
-                  - logs:*
-                  - ec2:*
-                  - ecs:*
-                  - eks:*
-                  - lambda:*
-                Resource: "*"
 
   # IAM role for CodeBuild
   CodeBuildRole:
@@ -101,17 +74,22 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - codepipeline:*
-                  - s3:*
-                  - codebuild:*
-                  - cloudformation:*
-                  - iam:*
-                  - secretsmanager:GetSecretValue
-                  - logs:*
-                  - ec2:*
-                  - ecs:*
-                  - eks:*
-                  - lambda:*
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${ArtifactsBucket}"
+                  - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:ValidateTemplate
                 Resource: "*"
 
   # CodeBuild project
@@ -136,7 +114,6 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
-
       TimeoutInMinutes: 30
 
   # IAM role for CodePipeline
@@ -158,24 +135,37 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - codepipeline:*
-                  - s3:*
-                  - codebuild:*
-                  - cloudformation:*
-                  - iam:*
-                  - secretsmanager:GetSecretValue
-                  - logs:*
-                  - ec2:*
-                  - ecs:*
-                  - eks:*
-                  - lambda:*
+                  - s3:GetBucketVersioning
+                  - s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: !GetAtt CodeBuildProject.Arn
+              - Effect: Allow
+                Action:
+                  - cloudformation:CreateStack
+                  - cloudformation:DeleteStack
+                  - cloudformation:DescribeStacks
+                  - cloudformation:UpdateStack
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:ExecuteChangeSet
+                  - cloudformation:SetStackPolicy
+                  - cloudformation:ValidateTemplate
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - s3:ListBucket
-                Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/*
+                  - iam:PassRole
+                Resource: !GetAtt CloudFormationRole.Arn
 
   # IAM Role for CloudFormation
   CloudFormationRole:
@@ -189,28 +179,17 @@ Resources:
             Principal:
               Service: cloudformation.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
       Policies:
-        - PolicyName: CloudFormationIAMPolicy
+        - PolicyName: CloudFormationExecutionPolicy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - iam:CreateRole
-                  - iam:DeleteRole
-                  - iam:AttachRolePolicy
-                  - iam:DetachRolePolicy
-                  - iam:PutRolePolicy
-                  - iam:DeleteRolePolicy
-                  - iam:GetRole
-                  - iam:PassRole
-                  - iam:UpdateAssumeRolePolicy
-                Resource: '*'
-              - Effect: Allow
-                Sid: 'PermissionsForCloudFormation'
-                Action: '*'
+                  - ec2:*
+                  - iam:*
+                  - s3:*
+                  - cloudformation:*
                 Resource: '*'
 
   # CodePipeline
@@ -284,3 +263,11 @@ Resources:
               InputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
+
+Outputs:
+  PipelineName:
+    Description: Name of the CodePipeline
+    Value: !Ref Pipeline
+  ArtifactsBucket:
+    Description: S3 Bucket for Pipeline Artifacts
+    Value: !Ref ArtifactsBucket
