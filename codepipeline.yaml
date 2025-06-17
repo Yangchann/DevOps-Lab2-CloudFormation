@@ -170,6 +170,12 @@ Resources:
                   - eks:*
                   - lambda:*
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/*
 
   # IAM Role for CloudFormation
   CloudFormationRole:
