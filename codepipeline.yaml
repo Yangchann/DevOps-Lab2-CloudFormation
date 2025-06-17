@@ -6,7 +6,8 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${AWS::StackName}-artifacts"
+      # BucketName: !Sub "${AWS::StackName}-artifacts"
+      BucketName: nt548-lab2-361
       VersioningConfiguration:
         Status: Enabled
       BucketEncryption:
@@ -31,22 +32,24 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: "Allow"
+          - Sid: AllowAllRolesListBucket
+            Effect: "Allow"
             Principal:
               AWS:
-                - !GetAtt CodePipelineRole.Arn
-                - !GetAtt CloudFormationRole.Arn
-                - !GetAtt CodeBuildRole.Arn
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-codepipeline-role
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-codebuild-role
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-cloudformation-role
             Action:
               - s3:ListBucket
             Resource:
               - !Sub arn:aws:s3:::${ArtifactsBucket}
-          - Effect: "Allow"
+          - Sid: AllowAllRolesObjectAccess
+            Effect: "Allow"
             Principal:
               AWS:
-                - !GetAtt CodePipelineRole.Arn
-                - !GetAtt CloudFormationRole.Arn
-                - !GetAtt CodeBuildRole.Arn
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-codepipeline-role
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-cloudformation-role
+                - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-codebuild-role
             Action:
               - s3:GetObject
               - s3:PutObject
@@ -67,61 +70,8 @@ Resources:
             Principal:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: "CodeBuildService"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/*"
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:PutObject
-                  - s3:ListBucket
-                Resource:
-                  - !Sub "arn:aws:s3:::${ArtifactsBucket}"
-                  - !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:GetBucketLocation
-                  - s3:PutObject
-                  - s3:ListBucket
-                  - s3:DeleteObject
-                Resource:
-                  - "arn:aws:s3:::nt548-lab2-361"
-                  - "arn:aws:s3:::nt548-lab2-361/*"
-              - Effect: Allow
-                Action:
-                  - cloudformation:ValidateTemplate
-                  - cloudformation:CreateStack
-                  - cloudformation:DeleteStack
-                  - cloudformation:DescribeStacks
-                  - cloudformation:DescribeStackEvents
-                  - cloudformation:DescribeStackResources
-                  - cloudformation:GetTemplate
-                  - cloudformation:ListStacks
-                  - cloudformation:UpdateStack
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - ec2:Describe*
-                  - iam:GetRole
-                  - iam:PassRole
-                  - iam:CreateRole
-                  - iam:DeleteRole
-                  - iam:AttachRolePolicy
-                  - iam:DetachRolePolicy
-                  - iam:PutRolePolicy
-                  - iam:DeleteRolePolicy
-                Resource: "*"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
 
   # CodeBuild project
   CodeBuildProject:
@@ -159,48 +109,9 @@ Resources:
             Principal:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: "CodePipelineServicePolicy"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetBucketVersioning
-                  - s3:GetBucketLocation
-                  - s3:ListBucket
-                  - s3:ListBucketVersions
-                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}"
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:GetObjectVersion
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource: !Sub "arn:aws:s3:::${ArtifactsBucket}/*"
-              - Effect: Allow
-                Action:
-                  - codebuild:BatchGetBuilds
-                  - codebuild:StartBuild
-                  - codebuild:BatchGetProjects
-                Resource: !GetAtt CodeBuildProject.Arn
-              - Effect: Allow
-                Action:
-                  - cloudformation:CreateStack
-                  - cloudformation:DeleteStack
-                  - cloudformation:DescribeStacks
-                  - cloudformation:UpdateStack
-                  - cloudformation:CreateChangeSet
-                  - cloudformation:DeleteChangeSet
-                  - cloudformation:DescribeChangeSet
-                  - cloudformation:ExecuteChangeSet
-                  - cloudformation:SetStackPolicy
-                  - cloudformation:ValidateTemplate
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - iam:PassRole
-                Resource: !GetAtt CloudFormationRole.Arn
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
+
 
   # IAM Role for CloudFormation
   CloudFormationRole:
@@ -214,18 +125,9 @@ Resources:
             Principal:
               Service: cloudformation.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: CloudFormationExecutionPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ec2:*
-                  - iam:*
-                  - s3:*
-                  - cloudformation:*
-                Resource: '*'
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
+
 
   # CodePipeline
   Pipeline:
@@ -283,18 +185,20 @@ Resources:
                 Version: '1'
               Configuration:
                 ActionMode: CREATE_UPDATE
-                StackName: nt548-lab2-stack
+                StackName: infrastructure-stack
                 TemplatePath: BuildOutput::main.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CloudFormationRole.Arn
-                ParameterOverrides: !Sub |
-                  {
-                    "Environment": "dev",
-                    "AllowedSSHIp": "1.54.205.235/32",
-                    "KeyName": "nt548-lab2",
-                    "AMI": "ami-004a7732acfcc1e2d",
-                    "BucketName": "${ArtifactsBucket}"
-                  }
+                ParameterOverrides: !Sub
+                  -  |
+                      {
+                        "Environment": "dev",
+                        "AllowedSSHIp": "1.54.205.235/32",
+                        "KeyName": "nt548-lab2",
+                        "AMI": "ami-004a7732acfcc1e2d",
+                        "BucketName": "${BucketName}"
+                      }
+                  - BucketName: !Ref ArtifactsBucket
               InputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
