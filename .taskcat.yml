@@ -10,7 +10,7 @@ tests:
     template: main.yaml
     parameters:
       Environment: dev
-      AllowedSSHIp: 0.0.0.0/32
+      AllowedSSHIp: 0.0.0.0/0
       KeyName: nt548-lab2
       AMI: ami-002fa10fbb7594252
       BucketName: nt548-lab2-361
